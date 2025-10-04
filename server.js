@@ -8,7 +8,7 @@ const {
   MODEL_R2_ONNX = "https://pub-f924fe6854dd4aae99dc7bff4b06ae5d.r2.dev/model_quantized.onnx",
   VOCAB_URL     = "https://pub-f924fe6854dd4aae99dc7bff4b06ae5d.r2.dev/vocab.txt",
   THRESHOLDS_URL= "https://pub-f924fe6854dd4aae99dc7bff4b06ae5d.r2.dev/thresholds.json",      // optional
-  MAX_LEN = "96",      // fixed by your model
+  TEMPERATURE = "4.0",   // higher = less confident predictions (reduce overconfidence)
   INTRA_OP_THREADS = "2"
 } = process.env;
 
@@ -173,10 +173,14 @@ app.post("/classify", async (req, res) => {
     if (!tensor) return res.status(500).json({ error: "No logits in outputs" });
 
     const logits = Array.from(tensor.data);
-    const m = Math.max(...logits);
-    const exps = logits.map(v => Math.exp(v - m));
-    const sum  = exps.reduce((a,b)=>a+b, 0);
-    const probs = exps.map(v => v/sum);
+
+    // Apply temperature scaling to reduce overconfidence
+    const temp = Number(TEMPERATURE);
+    const scaledLogits = logits.map(x => x / temp);
+
+    // Apply sigmoid for multi-label classification
+    const sigmoid = x => 1 / (1 + Math.exp(-x));
+    const probs = scaledLogits.map(sigmoid);
 
     const labels = (thresholds?.labels) ?? ["CPR_NEEDED","SEVERE_BLEEDING","CHOKING","SEIZURE","ALLERGIC_REACTION"];
     const paired = labels.map((name,i)=>({ name, p: probs[i] ?? 0 })).sort((a,b)=>b.p-a.p);
