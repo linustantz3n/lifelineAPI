@@ -1,0 +1,16 @@
+{
+  "name": "lifeline-inference",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "onnxruntime-node": "^1.18.0",
+    "@huggingface/tokenizers": "^0.15.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}
