@@ -8,7 +8,7 @@ const {
   MODEL_R2_ONNX = "https://pub-f924fe6854dd4aae99dc7bff4b06ae5d.r2.dev/model_quantized.onnx",
   VOCAB_URL     = "https://pub-f924fe6854dd4aae99dc7bff4b06ae5d.r2.dev/vocab.txt",
   THRESHOLDS_URL= "https://pub-f924fe6854dd4aae99dc7bff4b06ae5d.r2.dev/thresholds.json",      // optional
-  TEMPERATURE = "4.0",   // higher = less confident predictions (reduce overconfidence)
+  TEMPERATURE = "6.0",   // higher = less confident predictions (reduce overconfidence)
   INTRA_OP_THREADS = "2"
 } = process.env;
 
