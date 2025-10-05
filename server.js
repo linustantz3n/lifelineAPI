@@ -100,7 +100,10 @@ async function init() {
     fetchToTmp(VOCAB_URL, "vocab.txt"),
   ]);
 
-  thresholds = THRESHOLDS_URL ? await fetch(THRESHOLDS_URL).then(r => r.json()).catch(() => null) : null;
+  thresholds = THRESHOLDS_URL
+    ? await fetch(THRESHOLDS_URL).then(r => r.json()).catch(err => { console.error("Failed to load thresholds:", err); return null; })
+    : null;
+  console.log("Loaded thresholds:", JSON.stringify(thresholds, null, 2));
 
   const vocabText = await fs.readFile(vocabPath, "utf8");
   vocabMap = loadVocabFromText(vocabText);
@@ -182,17 +185,13 @@ app.post("/classify", async (req, res) => {
     const sigmoid = x => 1 / (1 + Math.exp(-x));
     const probs = scaledLogits.map(sigmoid);
 
-    const labels = (thresholds?.labels) ?? ["CPR_NEEDED","SEVERE_BLEEDING","CHOKING","SEIZURE","ALLERGIC_REACTION"];
+    const labels = ["CPR_NEEDED","SEVERE_BLEEDING","CHOKING","SEIZURE","BURN"];
     const paired = labels.map((name,i)=>({ name, p: probs[i] ?? 0 })).sort((a,b)=>b.p-a.p);
 
     const top = paired[0];
-    const globalMin = thresholds?.min_confidence ?? 0.50;
-    const perClass  = thresholds?.class_thresholds ?? {};
-    const marginMin = thresholds?.margin_min ?? 0.0;
-
-    const classMin  = perClass[top.name] ?? globalMin;
-    const separated = (paired[0].p - (paired[1]?.p ?? 0)) >= marginMin;
-    const accept = top.p >= classMin && separated && !(Number.isNaN(top.p));
+    // thresholds JSON is { "CPR_NEEDED": 0.65, "SEIZURE": 0.7, ... }
+    const classMin = thresholds?.[top.name] ?? 0.50;
+    const accept = top.p >= classMin && !(Number.isNaN(top.p));
     const prediction = accept ? top.name : "UNSURE";
 
     res.json({ ok: true, prediction, confidence: top.p, top_k: paired.slice(0,3) });
